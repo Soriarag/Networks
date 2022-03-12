@@ -3,7 +3,7 @@ import socket
 import threading
 
 from click import command
-from protocol import *
+from tcp import *
 import sys  # for arguments retrieval from terminal
 
 DISCONNECT_MESSAGE = "!DISCONNECT"

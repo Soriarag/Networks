@@ -4,7 +4,7 @@ import threading # threading synchronous processes
 #import module # blockchain module
 import json
 from unicodedata import name # encode json objects in block generation
-from protocol import *
+from tcp import *
 
 class Server:
   active_socket: socket.socket
