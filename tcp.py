@@ -1,11 +1,8 @@
 
-from os import sendfile
 import socket
 import threading
 import io
 import select
-
-from matplotlib.style import available
 
 
 DEBUG = True
@@ -55,14 +52,15 @@ def listen_req(ip: str, port=9100):
 
     adress = (ip, port)  # 9100 is the default TCP port number
     tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_sock.connect(adress)
+    tcp_sock.bind(adress)
     tcp_sock.listen()
     active_tcp = 0
+    if DEBUG : print(f"Listening to tcp calls in port {port}")
 
     while True:
-        client_socket = tcp_sock.accept()
+        client_socket,_ = tcp_sock.accept()
         request_handler = threading.Thread(
-            target=handle_tcp_client, args=client_socket)
+            target=handle_tcp_client, args=[client_socket])
         request_handler.start()
         active_tcp += 1
         print(f"tcp req accepted, now handling {active_tcp} tcp connections")
@@ -71,6 +69,7 @@ def listen_req(ip: str, port=9100):
 def handle_tcp_client(client_socket: socket.socket):
     # in my protocol the one requesting the tcp connection can just request files
 
+    if DEBUG: print("accepting connection")
     # perform handshake
     send_mssg(ACCEPT_CONNECTION, client_socket)
     connected = True
@@ -82,7 +81,7 @@ def handle_tcp_client(client_socket: socket.socket):
         request = request_packet.split(SEP)
         if request[0] == FILE_REQUEST:
             filename = str(request[1])
-            sendfile(filename, client_socket)
+            send_file(filename, client_socket)
         elif request[0] == DISCONNECT_MESSAGE:
             client_socket.close()
             connected = False
@@ -101,7 +100,7 @@ def get_contents(packet: bytes):
 
 def send_mssg(mssg: str, dest_socket: socket.socket):
     stream = io.BytesIO(mssg)
-    send_stream(stream)
+    send_stream(stream,dest_socket)
     stream.close()
 
 
@@ -200,9 +199,11 @@ def open_connection(adress, requests=[]):
     dest_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # Handshake
     dest_sock.connect(adress)
+    #checking answer
     answer_packet = dest_sock.recv(BUFFER_SIZE)
     _, _, answer_packet_contents = get_contents(answer_packet)
     result = answer_packet_contents.split(SEP)[0]
+    #connection accepted !
     if result != ACCEPT_CONNECTION:
         if DEBUG:
             print("connection denied !")
