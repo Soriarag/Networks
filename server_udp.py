@@ -12,15 +12,15 @@ file_name = sys.argv[1]
 
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.sendfilesto(file_name, (UDP_IP, UDP_PORT))
-print "Sending %s ..." % file_name
+sock.sendto(file_name, (UDP_IP, UDP_PORT))
+print ("Sending %s ..." % file_name)
 
 f = open(file_name, "r")
 data = f.read(buf)
 while(data):
-    if(sock.sendfilesto(data, (UDP_IP, UDP_PORT))):
+    if(sock.sendto(data, (UDP_IP, UDP_PORT))):
         data = f.read(buf)
-        time.sleep(0.02) # Give receiver a bit time to save
+        time.sleep(0.02) 
 
 sock.close()
 f.close()
