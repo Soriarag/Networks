@@ -23,6 +23,6 @@ while True:
             data, addr = sock.recvfrom(1024)
             f.write(data)
         else:
-            print "%s Finish!" % file_name
+            print("%s Finish!" % file_name)
             f.close()
             break

@@ -20,6 +20,7 @@ END_OF_DATA = b"!END"
 DISCONNECT_MESSAGE = b"!DISCONNECT"
 SEP = b" "
 FILE_REQUEST = b"REQ_FILE"
+LS_REQUEST = b"REQ_LS"
 ERR_INVALID_REQ = b"ERR_inv_req"
 ERR_EXPECT_ACK = b"ERR_exp_ack"
 ERR_FILE_NF = b"ERR_fileNF"
@@ -52,14 +53,14 @@ def recv_timeout(sock: socket.socket, timeout_seconds):
         raise socket.timeout()
 
 
-def format_bytes(data, due_bytes=4):
-    return data + ' ' * (due_bytes - len(data))
+def format_bytes(data:bytes, due_bytes=4):
+    return data + SEP * (due_bytes - len(data))
 
 
 def make_header(index_seq, packets_for_ack=4):
-    header_str = format_bytes(str(packets_for_ack)) + \
-        format_bytes(str(index_seq))
-    return header_str.encode(FORMAT)
+    header_bytes = format_bytes(str(packets_for_ack).encode(FORMAT)) + \
+        format_bytes(str(index_seq).encode(FORMAT))
+    return header_bytes
 
 
 # --------------------------------------------------------------------------------------------
@@ -141,9 +142,9 @@ def send_mssg(mssg: bytes, dest_socket: socket.socket):
     stream.close()
 
 
-def send_file(filename: str, dest_socket: socket.socket):
+def send_file(filename: str, dest_socket: socket.socket, path = ""):
     try:
-        stream = open("test_files/" + filename, "rb")
+        stream = open(path + filename, "rb")
         send_mssg(SUCCESS, dest_socket)
         send_stream(stream, dest_socket)
         stream.close()
@@ -183,9 +184,7 @@ def send_stream(bytes_stream, dest_socket: socket.socket):
         sent_packets += 1
         mssg_header = make_header(sent_packets)
 
-        l = len(mssg_contents)
-        if l < available_space:
-            mssg_contents += b' ' * (available_space-l)
+        mssg_contents = format_bytes(mssg_contents, available_space)
         mssg = mssg_header + mssg_contents
 
         if DEBUG:
@@ -233,6 +232,7 @@ def send_stream(bytes_stream, dest_socket: socket.socket):
 
     mssg_header = make_header(0, 1)
     dest_socket.send(mssg_header + END_OF_DATA)
+    last_recv = recv_ack(dest_socket)
 
 
 # --------------------------------------------------------------------------------------------
@@ -244,6 +244,7 @@ def get_file(filename: str, source_sock: socket.socket):
 
     if DEBUG:
         print(f"getting file {filename}")
+        
     request_body = FILE_REQUEST + SEP + filename.encode(FORMAT)
     packet = make_packet(body=request_body)
     source_sock.send(packet)
@@ -339,8 +340,9 @@ def get_stream(write_stream, source_socket: socket.socket):
                     print("sending ack for tail")
                 send_ack(next_missing-1, source_socket)
 
-            elif contents == END_OF_DATA:
+            elif contents.split(SEP)[0] == END_OF_DATA:
                 remaining_data = False
+                send_ack(next_missing - 1, source_socket)
             elif seq_index != next_missing:
                 if DEBUG:
                     print(
@@ -349,6 +351,7 @@ def get_stream(write_stream, source_socket: socket.socket):
             else:
                 write_stream.write(contents)
                 next_missing += 1
+                print(next_missing)
                 # refill stream
                 while next_missing < CONTINOUS_PACKETS and packet_buffer[next_missing] != None:
                     if DEBUG:
@@ -363,7 +366,8 @@ def get_stream(write_stream, source_socket: socket.socket):
         if DEBUG:
             print("receiver : packet_received")
 
-        if next_missing == CONTINOUS_PACKETS + 1:
-
+        if next_missing == packets_for_ack + 1 and remaining_data:
+            
+            print(f" sending ack for {next_missing - 1}")
             send_ack(next_missing - 1, source_socket)
             next_missing = 1
