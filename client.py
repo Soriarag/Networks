@@ -28,4 +28,4 @@ class Client:
     
     
 if __name__ == "__main__":  
-  tcp.open_connection(("127.0.1.1",9100),["f a.pdf"]) 
+  tcp.open_connection(("127.0.1.1",9100),["f wikipedia_art.txt"]) 
