@@ -1,6 +1,6 @@
 #inspired from : https://www.techwithtim.net/tutorials/socket-programming/
 import socket # low level implementation
-import threading # threading synchronous processes
+import os
 #import module # blockchain module
 import tcp
 from unicodedata import name # encode json objects in block generation
