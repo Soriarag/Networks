@@ -69,7 +69,7 @@ class Client:
         packet = tcp.make_packet(body=request)
         dest_sock.send(packet)
         result = tcp.get_message(dest_sock)
-        print(result)
+        print("FILES :\n" + result.decode(tcp.FORMAT))
 
 
 if __name__ == "__main__":
