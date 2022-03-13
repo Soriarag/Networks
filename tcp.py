@@ -43,8 +43,8 @@ def recv_timeout(sock: socket.socket, timeout_seconds):
         raise socket.timeout()
 
 
-def make_header(index_seq):
-    header_str = str(CONTINOUS_PACKETS) + str(index_seq)
+def make_header(index_seq, packets_for_ack=4):
+    header_str = str(packets_for_ack) + str(index_seq)
     return header_str.encode(FORMAT)
 
 
@@ -127,7 +127,7 @@ def recv_ack(source_socket: socket.socket) -> int:
 # TCP connection already opened
 
 
-def send_stream(bytes_stream: io.BytesIO, dest_socket: socket.socket):
+def send_stream(bytes_stream, dest_socket: socket.socket):
 
     available_space = BUFFER_SIZE - HEADER_LEN
     packet_buffer = [bytes]
@@ -156,7 +156,7 @@ def send_stream(bytes_stream: io.BytesIO, dest_socket: socket.socket):
                 if DEBUG:
                     print(f"error last ack is {last_recv}")
                 mssg_contents = packet_buffer[last_recv + 1]
-                mssg_header = make_header(last_recv)
+                mssg_header = make_header(last_recv,1)
                 mssg = mssg_header + mssg_contents
                 dest_socket.send(mssg)
 
@@ -166,7 +166,7 @@ def send_stream(bytes_stream: io.BytesIO, dest_socket: socket.socket):
         mssg_contents = bytes_stream.read(available_space)
 
     # manage tail (remaning non Acked messages)
-    dest_socket.send(make_header(last_recv) + b'')  # empty message demands ack
+    dest_socket.send(make_header(last_recv) + b'',sent_packets)  # empty message demands ack
     while (last_recv != sent_packets):
         if DEBUG:
             print(f"error in tail last ack is {last_recv}, setn packets is ")
@@ -188,6 +188,9 @@ def send_stream(bytes_stream: io.BytesIO, dest_socket: socket.socket):
 def get_file(filename: str, source_sock: socket.socket):
     if DEBUG:
         print(f"getting file {filename}")
+    new_file = open(filename,"wb")
+    get_stream(new_file,source_sock)
+    new_file.close()
 
 
 def open_connection(adress, requests=[]):
@@ -225,12 +228,11 @@ def send_ack(n, dest_socket: socket.socket):
     dest_socket.send(mssg)
 
 
-def get_stream(write_stream: io.BytesIO, source_socket: socket.socket):
+def get_stream(write_stream, source_socket: socket.socket):
 
     next_missing = 1
     remaining_data = True
     packet_buffer = [None] * CONTINOUS_PACKETS
-    missing_packets = False
     while remaining_data:
 
         if DEBUG:
@@ -241,7 +243,11 @@ def get_stream(write_stream: io.BytesIO, source_socket: socket.socket):
                 print("receiver : packet received")
 
             # check if packet is next in order
-            _, seq_index, contents = get_contents(data)
+            packets_for_ack, seq_index, contents = get_contents(data)
+            
+            if contents == b'':
+              send_ack(next_missing-1)
+            
             if seq_index != next_missing:
                 if DEBUG:
                     print(f"missing packet {seq_index}")
@@ -250,7 +256,7 @@ def get_stream(write_stream: io.BytesIO, source_socket: socket.socket):
                 write_stream.write(contents)
                 next_missing += 1
                 # refill stream
-                while next_missing <= CONTINOUS_PACKETS and packet_buffer[next_missing] != None:
+                while next_missing <= packets_for_ack and packet_buffer[next_missing] != None:
                     write_stream.write(packet_buffer[next_missing])
                     packet_buffer[next_missing] = None
                     next_missing += 1
@@ -261,7 +267,7 @@ def get_stream(write_stream: io.BytesIO, source_socket: socket.socket):
         if DEBUG:
             print("receiver : packet_received")
 
-        if next_missing == CONTINOUS_PACKETS + 1:
+        if next_missing == packets_for_ack + 1:
 
             send_ack(next_missing - 1)
             next_missing = 1
