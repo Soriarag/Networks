@@ -22,9 +22,9 @@ SEP = b" "
 FILE_REQUEST = b"REQ_FILE"
 ERR_INVALID_REQ = b"ERR_inv_req"
 ERR_EXPECT_ACK = b"ERR_exp_ack"
+ERR_FILE_NF = b"ERR_fileNF"
+SUCCESS = b"SUCCESS"
 
-
-def REDIRECT_PORT(port: int): return b"to_" + str(port).encode(FORMAT)
 def ACK(n): return b"ACK" + SEP + str(n).encode(FORMAT)
 
 
@@ -82,7 +82,7 @@ def listen_req(ip: str, port=9100):
         active_tcp += 1
         print(f"tcp req accepted, now handling {active_tcp} tcp connections")
 
-def make_message(i= 0, packets_for_ack = 4, body = b''):
+def make_packet(i= 0, packets_for_ack = 4, body = b''):
   return make_header(i, 4) + body
 
 def handle_tcp_client(client_socket: socket.socket):
@@ -92,7 +92,7 @@ def handle_tcp_client(client_socket: socket.socket):
         print("accepting connection")
     # perform handshake
     mssg = ACCEPT_CONNECTION
-    client_socket.send(make_message(body= mssg))
+    client_socket.send(make_packet(body= mssg))
     connected = True
 
 
@@ -125,6 +125,8 @@ def get_contents(packet: bytes):
     last_ack = int(packet_header[4:].split()[0])
     return packet_convention, last_ack, packet_contents
 
+def get_body(packet: bytes):
+  return packet[HEADER_LEN:]
 
 def send_mssg(mssg: bytes, dest_socket: socket.socket):
 
@@ -136,17 +138,20 @@ def send_mssg(mssg: bytes, dest_socket: socket.socket):
 
 
 def send_file(filename: str, dest_socket: socket.socket):
-    stream = open("test_files/" + filename, "rb")
-
-    send_stream(stream,dest_socket)
-    stream.close()
+    try:
+      stream = open("test_files/" + filename, "rb")
+      send_mssg(SUCCESS,dest_socket)
+      send_stream(stream,dest_socket)
+      stream.close()
+    except FileNotFoundError:
+      send_mssg(ERR_FILE_NF, dest_socket)
 
 
 def recv_ack(source_socket: socket.socket) -> int:
     packet = source_socket.recv(BUFFER_SIZE)
     while packet == b'':
         packet = source_socket.recv(BUFFER_SIZE)
-    _, _, ack_mssg = get_contents(packet)
+    ack_mssg = get_body(packet)
 
     mssg = ack_mssg.split(SEP)
     if mssg[0] != b"ACK":
@@ -236,16 +241,20 @@ def send_stream(bytes_stream, dest_socket: socket.socket):
 
 
 def get_file(filename: str, source_sock: socket.socket):
+  
     if DEBUG:
         print(f"getting file {filename}")
-    request_header = make_header(0)
     request_body = FILE_REQUEST + SEP + filename.encode(FORMAT)
-    request_message = request_header + request_body
-    source_sock.send(request_message)
-    new_file = open(filename, "wb")
-    get_stream(new_file, source_sock)
-    new_file.close()
-
+    packet = make_packet(body=request_body)
+    source_sock.send(packet)
+    
+    result = get_message(source_sock)
+    if result == SUCCESS:
+      new_file = open(filename, "wb")
+      get_stream(new_file, source_sock)
+      new_file.close()
+    else :
+      print(result.decode(FORMAT))
 
 def open_connection(adress, requests=[]):
 
@@ -258,7 +267,7 @@ def open_connection(adress, requests=[]):
     answer_packet = dest_sock.recv(BUFFER_SIZE)
     while answer_packet == b'':  # must get a valid answer
         answer_packet = dest_sock.recv(BUFFER_SIZE)
-    _, _, answer_packet_contents = get_contents(answer_packet)
+    answer_packet_contents = get_body(answer_packet)
     result = answer_packet_contents.split(SEP)[0]
 
     # connection accepted !
@@ -282,6 +291,7 @@ def open_connection(adress, requests=[]):
                 else:
                     print(f"command {rq} not understood")
                     dest_sock.close()
+        dest_sock.close()
 
 
 def send_ack(n, dest_socket: socket.socket):
@@ -289,6 +299,12 @@ def send_ack(n, dest_socket: socket.socket):
     mssg = mssg_header + ACK(n)
     dest_socket.send(mssg)
 
+def get_message(source_socket):
+  mssg_stream = io.BytesIO(b"")
+  get_stream(mssg_stream,source_socket)
+  mssg = mssg_stream.getvalue()
+  mssg_stream.close()
+  return mssg
 
 def get_stream(write_stream, source_socket: socket.socket):
 

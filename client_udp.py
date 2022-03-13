@@ -12,7 +12,7 @@ sock.bind((UDP_IP, IN_PORT))
 while True:
     data, addr = sock.recvfrom(1024)
     if data:
-        print "File name:", data
+        print (f"File name: {data}")
         file_name = data.strip()
 
     f = open(file_name, 'wb')

@@ -3,9 +3,6 @@ import socket # low level implementation
 import os
 #import module # blockchain module
 import tcp
-from unicodedata import name # encode json objects in block generation
-from tcp import *
-
 class Server:
   active_socket: socket.socket
   def __init__(this) -> None:
