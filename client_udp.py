@@ -12,9 +12,9 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((UDP_IP, IN_PORT))
 
 while True:
-    data, addr = sock.recfilesfrm(1024)
+    data, addr = sock.recvfrom(1024)
     if data:
-        print "File name:", data
+        print ("File name:", data)
         file_name = data.strip()
 
     f = open(file_name, 'CN')
@@ -22,9 +22,9 @@ while True:
     while True:
         ready = select.select([sock], [], [], timeout)
         if ready[0]:
-            data, addr = sock.recfilesfrm(1024)
+            data, addr = sock.recvfrom(1024)
             f.write(data)
         else:
-            print "%s Finish!" % file_name
+            print ("%s Finish!" % file_name)
             f.close()
             break
