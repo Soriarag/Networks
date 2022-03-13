@@ -1,4 +1,6 @@
 # inspired from : https://www.techwithtim.net/tutorials/socket-programming/
+from email.headerregistry import Address
+from genericpath import isfile
 import socket  # low level implementation
 # import module # blockchain module
 import tcp
@@ -11,8 +13,14 @@ class Server:
 
     def __init__(this, name="DEFAULT", IP = "127.0.1.1", port =  9100) -> None:
 
-        this.file_use_history = {}
+        this.file_use_history = {str:[]}
         this.def_path = "test_files/"
+        
+        #building file tracking
+        l = len(this.def_path)
+        
+        for name in glob.glob(this.def_path + '*'):
+          this.file_use_history[name[l:]] = []
 
         adress = (IP, port)  # 9100 is the default TCP port number
         tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,6 +58,8 @@ class Server:
             request = request_parse[0]
             if request == tcp.FILE_REQUEST:
                 filename = request_parse[1].decode(tcp.FORMAT)
+                if (isfile(this.def_path + filename)):
+                  this.file_use_history[filename].append(client_adress[0])
                 tcp.send_file(filename, client_socket, this.def_path)
                 
             elif request == tcp.LS_REQUEST:
