@@ -53,7 +53,7 @@ class Server:
                 tcp.send_file(filename, client_socket, this.def_path)
                 
             elif request == tcp.LS_REQUEST:
-                regex = ""
+                regex = "*"
                 if len(request_parse) > 1:
                   regex = request_parse[1].decode(tcp.FORMAT)
                 this.send_files_list(client_socket,pattern=regex,path=this.def_path)
@@ -65,7 +65,7 @@ class Server:
                 tcp.send_mssg(tcp.ERR_INVALID_REQ, client_socket)
                 
     def send_files_list(this, dest_socket:socket.socket, pattern= "*", path=""):
-      files_ls = '\n'.join(glob.glob('.' + path + pattern))
+      files_ls = '\n'.join(glob.glob('test_files/*'))
       tcp.send_mssg(files_ls.encode(tcp.FORMAT), dest_socket)
 
 
