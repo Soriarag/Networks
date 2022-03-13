@@ -83,4 +83,4 @@ if __name__ == "__main__":
 
 
     print("[STARTING] server is starting...")
-    myServer = Server(port= 9110)
+    myServer = Server(port= 9100)

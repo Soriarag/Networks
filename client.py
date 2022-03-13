@@ -2,6 +2,8 @@ from nis import cat
 from re import L
 import socket
 from urllib import request
+
+from matplotlib.style import available
 import tcp
 
 from click import command
@@ -11,14 +13,52 @@ import sys  # for arguments retrieval from terminal
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
 
+class Agent:
+    def __init__(this, tcp_adress, udp_adress):
+        this.tcp_adress = tcp_adress
+        this.udp_adress = udp_adress
+
+
 class Client:
     active_socket: socket.socket
-    server_IP = "127.0.1.1"
-    commands = "f <FILENAME>, ls <PATTERN> (Server only)"
+    host = socket.gethostname()
+    commands = "f <FILENAME>, ls <PATTERN> (lits files in Server only). d (disconnect)"
+    available_agents = {str: Agent}
+    available_agents["Serv"] = Agent((host, 9100), (host, 162))
+    available_agents["Carl"] = Agent((host, 99), (host, 139))
+    available_agents["Juan"] = Agent((host, 5000), (host, 5001))
+    available_agents["Julie"] = Agent((host, 5002), (host, 5003))
+    available_agents["Hans"] = Agent((host, 5004), (host, 5005))
 
-    def __init__(this, actions=[]) -> None:
+    def __init__(this, name="Carl") -> None:
+        this.tcp_adress = this.available_agents[name].tcp_adress
+        this.udp_adress = this.available_agents[name].tcp_adress
+        print(f"Hi, I'm {name}, ready to go!")
+        rq = input()
+        while(rq != "d"):
 
-        adress = (this.server_IP, 9110)
+            data = rq.split()
+            l = len(data)
+            if l > 0:
+                if data[0] == "tcp":
+                    if (l > 1):
+                        name = data[1]
+                        this.connect_tcp(name)
+                    else:
+                        print("missing_name")
+                if data[0] == "names":
+                    print(f"My name is {name}")
+                    for name in this.available_agents.keys():
+                        print(name)
+                else:
+                    print(f"command {rq} not understood")
+            else :
+                print("?")
+            rq = input()
+
+
+    def connect_tcp(this, name, actions=[]):
+        adress = this.available_agents[name].tcp_adress
 
         if actions:
             tcp.open_connection(adress, actions)
@@ -45,7 +85,7 @@ class Client:
                     print("connection accepted !")
 
                 rq = input()
-                while(rq != "close"):
+                while(rq != "d"):
 
                     data = rq.split()
                     if data[0] == "f":
@@ -57,14 +97,13 @@ class Client:
                             this.get_files_info(dest_sock)
                     else:
                         print(f"command {rq} not understood")
-                        
-                        
+
                     rq = input()
 
-                dest_sock.send(tcp.take_packet(body=DISCONNECT_MESSAGE))
+                dest_sock.send(tcp.make_packet(body=DISCONNECT_MESSAGE))
                 dest_sock.close()
 
-    def get_files_info(this, dest_sock :socket.socket, pattern=""):
+    def get_files_info(this, dest_sock: socket.socket, pattern=""):
         request = tcp.LS_REQUEST + tcp.SEP + (pattern.encode(tcp.FORMAT))
         packet = tcp.make_packet(body=request)
         dest_sock.send(packet)
