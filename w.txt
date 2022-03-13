@@ -1,3 +1,4 @@
+Extracted from https://en.wikipedia.org/wiki/Non-uniform_rational_B-spline:
 Non-uniform rational basis spline (NURBS) is a mathematical model using basis splines (B-splines) that is commonly used in 
 computer graphics for representing curves and surfaces. It offers great flexibility and precision for handling both analytic 
 (defined by common mathematical formulae) and modeled shapes. It is a type of curve modeling, as opposed to polygonal modeling 
@@ -12,4 +13,4 @@ NURBS surfaces.
 In general, editing NURBS curves and surfaces is intuitive and predictable.[citation needed] Control points are always either
  connected directly to the curve or surface, or else act as if they were connected by a rubber band. Depending on the type of 
  user interface, the editing of NURBS curves and surfaces can be via their control points (similar to Bézier curves) or via 
- higher level tools such as spline modeling and hierarchical editing.                                                                               
+ higher level tools such as spline modeling and hierarchical editing.   

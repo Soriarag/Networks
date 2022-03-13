@@ -22,7 +22,7 @@ host = socket.gethostname()
 
 class Client:
     active_socket: socket.socket
-    UI_commands = "tcp <NAME> (not me)"
+    UI_commands = "tcp <NAME> (not me), names, help"
     tcp_commands = "f <FILENAME>, ls <PATTERN> (lits files in Server only). d (disconnect)"
     available_agents = {str: Agent}
     available_agents["Serv"] = Agent((host, 9100), (host, 162))
@@ -53,11 +53,11 @@ class Client:
                         this.connect_tcp(name)
                     else:
                         print("missing_name")
-                if data[0] == "names":
+                elif data[0] == "names":
                     print(f"My name is {name}")
                     for name in this.available_agents.keys():
                         print(name)
-                if data[0] == "help":
+                elif data[0] == "help":
                     print(this.UI_commands)
                 else:
                     print(f"command {rq} not understood")
@@ -78,16 +78,32 @@ class Client:
             dest_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             # Handshake
             dest_sock.connect(adress)
-            # checking answer
+            # veryfying credentials
+            
             answer_packet = dest_sock.recv(tcp.BUFFER_SIZE)
             while answer_packet == b'':  # must get a valid answer
                 answer_packet = dest_sock.recv(tcp.BUFFER_SIZE)
+                
             answer_packet_contents = tcp.get_body(answer_packet)
-            result = answer_packet_contents.split(tcp.SEP)[0]
+            results = answer_packet_contents.split(tcp.SEP)
+            
+            if results[0] == tcp.CREDENTIAL_REQUEST:
+                print("sending name")
+                mssg = this.name.encode(tcp.FORMAT)
+                dest_sock.send(tcp.make_packet(body=mssg))
+                print(mssg)
+            else :
+                print("missig credential request")
+                return
+            
+            #answer verification
+            answer_packet = dest_sock.recv(tcp.BUFFER_SIZE)
+            answer_packet_contents = tcp.get_body(answer_packet)
+            results = answer_packet_contents.split(tcp.SEP)
 
             # connection accepted !
-            print("receiver : connection  ")
-            if result != tcp.ACCEPT_CONNECTION:
+            print(f"receiver : connection {results} ")
+            if results[0] != tcp.ACCEPT_CONNECTION:
                 if tcp.DEBUG:
                     print("connection denied !")
                 dest_sock.close()
@@ -95,7 +111,8 @@ class Client:
             else:
                 if tcp.DEBUG:
                     print("connection accepted !")
-
+                
+                
                 rq = input()
                 while(rq != "d"):
 
@@ -126,7 +143,6 @@ class Client:
 
 
 if __name__ == "__main__":
-    try:
-        Client(sys.argv[0])
-    except:
-        Client()
+    try :
+        Client(sys.argv[1])
+    except : Client()

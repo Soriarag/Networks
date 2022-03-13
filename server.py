@@ -24,7 +24,9 @@ class Server:
     def __init__(this, name="DEFAULT", IP = "127.0.1.1", port =  9100) -> None:
 
         this.file_use_history = {str:[]}
-        this.file_use_history["platoni"]
+        this.file_use_history["a.jpg"] = all_agents
+        this.file_use_history["p.pdf"] = all_agents[1:2]
+        this.file_use_history["w.txt"] = []
         this.def_path = "test_files/"
         
         #building file tracking
@@ -49,14 +51,22 @@ class Server:
             print(
                 f"tcp req accepted, now handling {active_tcp} tcp connections")
 
-    def handle_client(this, client_socket, client_adress):
+    def handle_client(this, client_socket: socket.socket, client_adress):
+        
+        
+        
+       # request credentials
+        mssg = tcp.CREDENTIAL_REQUEST
+        client_socket.send(tcp.make_packet(body=mssg))
+        
+        answer_packet_contents = client_socket.recv(tcp.BUFFER_SIZE)
+        name =  answer_packet_contents.split(tcp.SEP)[0].decode(tcp.FORMAT)
+        print ("recieved " + name)
        # perform handshake
         mssg = tcp.ACCEPT_CONNECTION
         client_socket.send(tcp.make_packet(body=mssg))
         connected = True
-
-        # manage acks
-
+        
         while connected:
             request_packet = client_socket.recv(tcp.BUFFER_SIZE)
             while (request_packet == b''):
