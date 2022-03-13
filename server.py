@@ -59,9 +59,16 @@ class Server:
         mssg = tcp.CREDENTIAL_REQUEST
         client_socket.send(tcp.make_packet(body=mssg))
         
-        answer_packet_contents = client_socket.recv(tcp.BUFFER_SIZE)
+        answer_packet = client_socket.recv(tcp.BUFFER_SIZE)
+        answer_packet_contents = tcp.get_body(answer_packet)
         name =  answer_packet_contents.split(tcp.SEP)[0].decode(tcp.FORMAT)
-        print ("recieved " + name)
+        
+        if not (name in this.available_agents.keys()):
+            print
+            mssg = tcp.DENY_CONNECTION
+            client_socket.send(tcp.make_packet(body=mssg))
+            client_socket.close()
+            return
        # perform handshake
         mssg = tcp.ACCEPT_CONNECTION
         client_socket.send(tcp.make_packet(body=mssg))
@@ -104,4 +111,4 @@ if __name__ == "__main__":
 
 
     print("[STARTING] server is starting...")
-    myServer = Server(port= 9100)
+    myServer = Server(port= 9110)

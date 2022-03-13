@@ -25,7 +25,7 @@ class Client:
     UI_commands = "tcp <NAME> (not me), names, help"
     tcp_commands = "f <FILENAME>, ls <PATTERN> (lits files in Server only). d (disconnect)"
     available_agents = {str: Agent}
-    available_agents["Serv"] = Agent((host, 9100), (host, 162))
+    available_agents["Serv"] = Agent((host, 9110), (host, 162))
     available_agents["Carl"] = Agent((host, 99), (host, 139))
     available_agents["Juan"] = Agent((host, 5000), (host, 5001))
     available_agents["Julie"] = Agent((host, 5002), (host, 5003))
