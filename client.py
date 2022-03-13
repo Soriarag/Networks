@@ -18,11 +18,12 @@ class Agent:
         this.tcp_adress = tcp_adress
         this.udp_adress = udp_adress
 
+host = socket.gethostname()
 
 class Client:
     active_socket: socket.socket
-    host = socket.gethostname()
-    commands = "f <FILENAME>, ls <PATTERN> (lits files in Server only). d (disconnect)"
+    UI_commands = "tcp <NAME> (not me)"
+    tcp_commands = "f <FILENAME>, ls <PATTERN> (lits files in Server only). d (disconnect)"
     available_agents = {str: Agent}
     available_agents["Serv"] = Agent((host, 9100), (host, 162))
     available_agents["Carl"] = Agent((host, 99), (host, 139))
@@ -31,9 +32,15 @@ class Client:
     available_agents["Hans"] = Agent((host, 5004), (host, 5005))
 
     def __init__(this, name="Carl") -> None:
+        
+        while name == "Serv" or not name in this.available_agents.keys():
+            name = input("You shouldn't be a server, choose a new name")
+
+        this.name = name
         this.tcp_adress = this.available_agents[name].tcp_adress
         this.udp_adress = this.available_agents[name].tcp_adress
-        print(f"Hi, I'm {name}, ready to go!")
+        print(f"Hi, I'm {name}, ready to go! type help to see commands")
+        
         rq = input()
         while(rq != "d"):
 
@@ -50,6 +57,8 @@ class Client:
                     print(f"My name is {name}")
                     for name in this.available_agents.keys():
                         print(name)
+                if data[0] == "help":
+                    print(this.UI_commands)
                 else:
                     print(f"command {rq} not understood")
             else :
@@ -58,6 +67,9 @@ class Client:
 
 
     def connect_tcp(this, name, actions=[]):
+        
+        while name == this.name:
+            name = input("This can't be you! Choose a someone else")
         adress = this.available_agents[name].tcp_adress
 
         if actions:
@@ -95,6 +107,8 @@ class Client:
                             this.get_files_info(dest_sock, data[1])
                         except:
                             this.get_files_info(dest_sock)
+                    elif data[0] == "help":
+                        print(this.tcp_commands)
                     else:
                         print(f"command {rq} not understood")
 
@@ -112,4 +126,7 @@ class Client:
 
 
 if __name__ == "__main__":
-    Client()
+    try:
+        Client(sys.argv[0])
+    except:
+        Client()

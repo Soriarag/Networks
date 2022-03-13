@@ -1,3 +1,4 @@
+Extracted from https://en.wikipedia.org/wiki/Non-uniform_rational_B-spline:
 Non-uniform rational basis spline (NURBS) is a mathematical model using basis splines (B-splines) that is commonly used in 
 computer graphics for representing curves and surfaces. It offers great flexibility and precision for handling both analytic 
 (defined by common mathematical formulae) and modeled shapes. It is a type of curve modeling, as opposed to polygonal modeling 
