@@ -6,14 +6,25 @@ import socket  # low level implementation
 import tcp
 import glob
 import threading
+from client import *
 
+all_agents = ["Carl", "Juan", "Julie", "Hans"]
 
 class Server:
     active_socket: socket.socket
 
+    available_agents = {str: Agent}
+    available_agents["Serv"] = Agent((host, 9100), (host, 162))
+    available_agents["Carl"] = Agent((host, 99), (host, 139))
+    available_agents["Juan"] = Agent((host, 5000), (host, 5001))
+    available_agents["Julie"] = Agent((host, 5002), (host, 5003))
+    available_agents["Hans"] = Agent((host, 5004), (host, 5005))
+
+
     def __init__(this, name="DEFAULT", IP = "127.0.1.1", port =  9100) -> None:
 
         this.file_use_history = {str:[]}
+        this.file_use_history["platoni"]
         this.def_path = "test_files/"
         
         #building file tracking
